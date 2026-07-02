@@ -1,80 +1,79 @@
-import { BookPlus } from "lucide-react";
+import { Archive, BookOpen, BookPlus, CheckCircle2, FilePenLine, Users } from "lucide-react"
 
-import { CourseList } from "@/features/courses/components/CourseList";
-import {
-  getCourseStats,
-  getCourses
-} from "@/features/courses/services/courses.service";
+import { CourseList } from "@/features/courses/components/CourseList"
+import { getCourseStats, getCourses } from "@/features/courses/services/courses.service"
+import { PageHeader } from "@/shared/components/layout/PageHeader"
+import { SectionHeader } from "@/shared/components/layout/SectionHeader"
+import { DashboardStatCard } from "@/shared/components/ui/DashboardStatCard"
 
 export default async function AdminCoursesPage() {
-  const courses = await getCourses();
-  const stats = await getCourseStats();
+  const courses = await getCourses()
+  const stats = await getCourseStats()
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col justify-between gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.22em] text-indigo-600">
-            Kurs Yönetimi
-          </p>
-
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-            Tüm Kurslar
-          </h1>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Admin burada tüm kursları görüp düzenleyecek. Şimdilik mock veriyle
-            çalışıyor.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-700"
-        >
-          <BookPlus className="size-4" />
-          Kurs Ekle
-        </button>
-      </section>
+      <PageHeader
+        eyebrow="Kurs Yönetimi"
+        title="Tüm Kurslar"
+        description="Admin burada tüm kursları görüp düzenleyecek. Şimdilik mock veriyle çalışıyor."
+        variant="card"
+        actions={
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-indigo-700"
+          >
+            <BookPlus className="size-4" />
+            Kurs Ekle
+          </button>
+        }
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-slate-500">Toplam Kurs</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">
-            {stats.totalCourses}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-slate-500">Yayında</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">
-            {stats.publishedCourses}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-slate-500">Taslak</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">
-            {stats.draftCourses}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-slate-500">Arşiv</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">
-            {stats.archivedCourses}
-          </p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-bold text-slate-500">Kayıtlı Öğrenci</p>
-          <p className="mt-2 text-3xl font-black text-slate-950">
-            {stats.totalEnrollments}
-          </p>
-        </div>
+        <DashboardStatCard
+          title="Toplam Kurs"
+          value={String(stats.totalCourses)}
+          description="Sistemdeki tüm kurslar"
+          icon={BookOpen}
+          tone="indigo"
+        />
+        <DashboardStatCard
+          title="Yayında"
+          value={String(stats.publishedCourses)}
+          description="Öğrenciye açık kurslar"
+          icon={CheckCircle2}
+          tone="emerald"
+        />
+        <DashboardStatCard
+          title="Taslak"
+          value={String(stats.draftCourses)}
+          description="Hazırlık aşamasında"
+          icon={FilePenLine}
+          tone="amber"
+        />
+        <DashboardStatCard
+          title="Arşiv"
+          value={String(stats.archivedCourses)}
+          description="Pasif kurslar"
+          icon={Archive}
+          tone="slate"
+        />
+        <DashboardStatCard
+          title="Kayıtlı Öğrenci"
+          value={String(stats.totalEnrollments)}
+          description="Toplam kayıt sayısı"
+          icon={Users}
+          tone="rose"
+        />
       </section>
 
-      <CourseList courses={courses} audience="admin" />
+      <section className="space-y-4">
+        <SectionHeader
+          title="Kurs Listesi"
+          description={`${courses.length} kurs listeleniyor. Gerçek Supabase bağlantısı gelince admin tüm kursları buradan yönetecek.`}
+        />
+
+        <CourseList courses={courses} audience="admin" />
+      </section>
     </div>
-  );
+  )
 }

@@ -1,116 +1,123 @@
-import Link from "next/link";
 import {
   BookOpen,
   CalendarDays,
   ClipboardList,
   FileText,
   PlayCircle,
-  UserRound
-} from "lucide-react";
+  UserRound,
+  type LucideIcon,
+} from "lucide-react"
+
+import { PageHeader } from "@/shared/components/layout/PageHeader"
+import {
+  DashboardActionCard,
+  type DashboardActionCardProps,
+} from "@/shared/components/ui/DashboardActionCard"
+import {
+  DashboardStatCard,
+  type DashboardStatCardProps,
+} from "@/shared/components/ui/DashboardStatCard"
 
 const stats = [
   {
     title: "Aktif Ders",
     value: "3",
     description: "Kayıtlı olduğun dersler",
-    icon: BookOpen
+    icon: BookOpen,
+    tone: "indigo",
   },
   {
     title: "Yaklaşan Canlı Ders",
     value: "2",
     description: "Bu hafta planlanan dersler",
-    icon: CalendarDays
+    icon: CalendarDays,
+    tone: "emerald",
   },
   {
     title: "Bekleyen Ödev",
     value: "4",
     description: "Teslim etmen gereken ödevler",
-    icon: ClipboardList
+    icon: ClipboardList,
+    tone: "amber",
   },
   {
     title: "Sınav",
     value: "2",
     description: "Çözmen gereken sınavlar",
-    icon: FileText
-  }
-];
+    icon: FileText,
+    tone: "rose",
+  },
+] satisfies Array<{
+  title: string
+  value: string
+  description: string
+  icon: LucideIcon
+  tone: DashboardStatCardProps["tone"]
+}>
 
 const quickActions = [
   {
     title: "Derslerime Git",
     description: "Kayıtlı olduğun kursları görüntüle.",
     href: "/dashboard/student/courses",
-    icon: BookOpen
+    icon: BookOpen,
+    tone: "indigo",
   },
   {
     title: "Canlı Derslere Git",
     description: "Yaklaşan canlı derslerini görüntüle.",
     href: "/dashboard/student/live-lessons",
-    icon: PlayCircle
+    icon: PlayCircle,
+    tone: "emerald",
   },
   {
     title: "Ödevlerini Kontrol Et",
     description: "Teslim tarihlerini ve geri bildirimleri gör.",
     href: "/dashboard/student/assignments",
-    icon: ClipboardList
+    icon: ClipboardList,
+    tone: "amber",
   },
   {
     title: "Profilini Aç",
     description: "Öğrenci profil bilgilerini kontrol et.",
     href: "/dashboard/student/profile",
-    icon: UserRound
-  }
-];
+    icon: UserRound,
+    tone: "rose",
+  },
+] satisfies Array<{
+  title: string
+  description: string
+  href: string
+  icon: LucideIcon
+  tone: DashboardActionCardProps["tone"]
+}>
 
 export function StudentDashboardHome() {
   return (
     <div className="space-y-8">
-      <section className="rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-slate-950 p-6 text-white shadow-lg md:p-8">
-        <p className="text-sm font-bold uppercase tracking-[0.24em] text-amber-300">
-          Öğrenci Paneli
-        </p>
-
-        <div className="mt-4 max-w-3xl">
-          <h2 className="text-3xl font-black tracking-tight md:text-4xl">
-            Derslerini, canlı derslerini ve ödevlerini buradan takip et.
-          </h2>
-
-          <p className="mt-4 text-sm leading-7 text-white/80 md:text-base">
-            Parsmatematik öğrenci paneli; derslere katılman, ödevlerini takip
-            etmen, sınavlarını çözmen ve profilini yönetmen için hazırlanıyor.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Öğrenci Paneli"
+        title="Derslerini, canlı derslerini ve ödevlerini buradan takip et."
+        description="Parsmatematik öğrenci paneli; derslere katılman, ödevlerini takip etmen, sınavlarını çözmen ve profilini yönetmen için hazırlanıyor."
+        variant="gradient"
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (
-          <div
+          <DashboardStatCard
             key={item.title}
-            className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">
-                  {item.title}
-                </p>
-                <p className="mt-2 text-3xl font-black text-slate-950">
-                  {item.value}
-                </p>
-              </div>
-
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                <item.icon className="size-6" />
-              </div>
-            </div>
-
-            <p className="mt-3 text-sm text-slate-500">{item.description}</p>
-          </div>
+            title={item.title}
+            value={item.value}
+            description={item.description}
+            icon={item.icon}
+            tone={item.tone}
+          />
         ))}
       </section>
 
       <section>
         <div className="mb-4">
-          <h3 className="text-xl font-black text-slate-950">Hızlı işlemler</h3>
+          <h2 className="text-xl font-black text-slate-950">Hızlı işlemler</h2>
           <p className="mt-1 text-sm text-slate-500">
             Öğrencinin en sık kullanacağı alanlar.
           </p>
@@ -118,26 +125,17 @@ export function StudentDashboardHome() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {quickActions.map((item) => (
-            <Link
+            <DashboardActionCard
               key={item.href}
+              title={item.title}
+              description={item.description}
               href={item.href}
-              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                <item.icon className="size-6" />
-              </div>
-
-              <h4 className="mt-5 text-lg font-black text-slate-950">
-                {item.title}
-              </h4>
-
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {item.description}
-              </p>
-            </Link>
+              icon={item.icon}
+              tone={item.tone}
+            />
           ))}
         </div>
       </section>
     </div>
-  );
+  )
 }

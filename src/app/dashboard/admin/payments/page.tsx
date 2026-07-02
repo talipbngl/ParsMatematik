@@ -1,3 +1,5 @@
+import { AlertTriangle, CheckCircle2, Clock3, CreditCard } from "lucide-react"
+
 import { ManualPaymentForm } from "@/features/payments/components/ManualPaymentForm"
 import { PaymentTable } from "@/features/payments/components/PaymentTable"
 import {
@@ -9,6 +11,9 @@ import {
   PAYMENT_STATUSES,
   type PaymentStatus,
 } from "@/features/payments/types/payments.types"
+import { PageHeader } from "@/shared/components/layout/PageHeader"
+import { SectionHeader } from "@/shared/components/layout/SectionHeader"
+import { DashboardStatCard } from "@/shared/components/ui/DashboardStatCard"
 
 interface AdminPaymentsPageProps {
   searchParams?:
@@ -54,29 +59,6 @@ export default async function AdminPaymentsPage({
   })
   const stats = await getPaymentStats(allPayments)
 
-  const statCards = [
-    {
-      title: "Toplam Ödeme",
-      value: String(stats.totalPayments),
-      description: formatPaymentAmount(stats.totalAmount),
-    },
-    {
-      title: "Ödenen",
-      value: String(stats.paidPayments),
-      description: formatPaymentAmount(stats.paidAmount),
-    },
-    {
-      title: "Bekleyen",
-      value: String(stats.pendingPayments),
-      description: formatPaymentAmount(stats.pendingAmount),
-    },
-    {
-      title: "Geciken",
-      value: String(stats.overduePayments),
-      description: formatPaymentAmount(stats.overdueAmount),
-    },
-  ]
-
   const statusFilters: Array<{
     label: string
     value: PaymentStatus | "all"
@@ -91,53 +73,56 @@ export default async function AdminPaymentsPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-medium text-indigo-600">Admin Paneli</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
-            Ödeme Takibi
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            Öğrencilerin ödeme durumlarını takip et, manuel ödeme kaydı oluştur
-            ve bekleyen ödemeleri onayla.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Admin Paneli"
+        title="Ödeme Takibi"
+        description="Öğrencilerin ödeme durumlarını takip et, manuel ödeme kaydı oluştur ve bekleyen ödemeleri onayla."
+        variant="card"
+      />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((card) => (
-          <article
-            key={card.title}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <p className="text-sm font-medium text-slate-500">{card.title}</p>
-            <p className="mt-2 text-2xl font-bold text-slate-950">
-              {card.value}
-            </p>
-            <p className="mt-1 text-sm text-slate-600">{card.description}</p>
-          </article>
-        ))}
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <DashboardStatCard
+          title="Toplam Ödeme"
+          value={String(stats.totalPayments)}
+          description={formatPaymentAmount(stats.totalAmount)}
+          icon={CreditCard}
+          tone="indigo"
+        />
+        <DashboardStatCard
+          title="Ödenen"
+          value={String(stats.paidPayments)}
+          description={formatPaymentAmount(stats.paidAmount)}
+          icon={CheckCircle2}
+          tone="emerald"
+        />
+        <DashboardStatCard
+          title="Bekleyen"
+          value={String(stats.pendingPayments)}
+          description={formatPaymentAmount(stats.pendingAmount)}
+          icon={Clock3}
+          tone="amber"
+        />
+        <DashboardStatCard
+          title="Geciken"
+          value={String(stats.overduePayments)}
+          description={formatPaymentAmount(stats.overdueAmount)}
+          icon={AlertTriangle}
+          tone="rose"
+        />
       </section>
 
       <ManualPaymentForm />
 
       <section className="space-y-4">
-        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">
-              Ödeme Listesi
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              {payments.length} kayıt listeleniyor.
-            </p>
-          </div>
+        <div className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+          <SectionHeader
+            title="Ödeme Listesi"
+            description={`${payments.length} kayıt listeleniyor.`}
+          />
 
           <form className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-            <input
-              type="hidden"
-              name="status"
-              value={selectedStatus}
-            />
+            <input type="hidden" name="status" value={selectedStatus} />
+
             <input
               name="q"
               type="search"
@@ -145,9 +130,10 @@ export default async function AdminPaymentsPage({
               placeholder="Öğrenci, kurs veya not ara"
               className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 lg:w-72"
             />
+
             <button
               type="submit"
-              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800"
             >
               Ara
             </button>
@@ -162,7 +148,7 @@ export default async function AdminPaymentsPage({
               <a
                 key={filter.value}
                 href={buildStatusHref(filter.value)}
-                className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-full px-3 py-1.5 text-sm font-black transition ${
                   isActive
                     ? "bg-indigo-600 text-white"
                     : "bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50"

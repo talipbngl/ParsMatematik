@@ -1,122 +1,130 @@
-import Link from "next/link";
 import {
   BookOpen,
   CalendarPlus,
   ClipboardCheck,
   FileText,
   GraduationCap,
-  Users
-} from "lucide-react";
+  Users,
+  type LucideIcon,
+} from "lucide-react"
+
+import { PageHeader } from "@/shared/components/layout/PageHeader"
+import {
+  DashboardActionCard,
+  type DashboardActionCardProps,
+} from "@/shared/components/ui/DashboardActionCard"
+import {
+  DashboardStatCard,
+  type DashboardStatCardProps,
+} from "@/shared/components/ui/DashboardStatCard"
 
 const stats = [
   {
     title: "Aktif Kurs",
     value: "5",
     description: "Yönettiğin kurslar",
-    icon: BookOpen
+    icon: BookOpen,
+    tone: "indigo",
   },
   {
     title: "Öğrenci",
     value: "42",
     description: "Kurslarına kayıtlı öğrenciler",
-    icon: Users
+    icon: Users,
+    tone: "emerald",
   },
   {
     title: "Bu Hafta Ders",
     value: "8",
     description: "Planlanan canlı dersler",
-    icon: CalendarPlus
+    icon: CalendarPlus,
+    tone: "amber",
   },
   {
     title: "Bekleyen Teslim",
     value: "13",
     description: "İncelenecek ödevler",
-    icon: ClipboardCheck
-  }
-];
+    icon: ClipboardCheck,
+    tone: "rose",
+  },
+] satisfies Array<{
+  title: string
+  value: string
+  description: string
+  icon: LucideIcon
+  tone: DashboardStatCardProps["tone"]
+}>
 
 const quickActions = [
   {
     title: "Kurslarım",
     description: "Sana atanmış kursları görüntüle.",
     href: "/dashboard/teacher/courses",
-    icon: BookOpen
+    icon: BookOpen,
+    tone: "indigo",
   },
   {
     title: "Canlı Ders Oluştur",
     description: "Kursa bağlı yeni bir canlı ders planla.",
     href: "/dashboard/teacher/live-lessons/new",
-    icon: CalendarPlus
+    icon: CalendarPlus,
+    tone: "emerald",
   },
   {
     title: "Ödev Oluştur",
     description: "Öğrencilere yeni ödev ver.",
     href: "/dashboard/teacher/assignments/new",
-    icon: ClipboardCheck
+    icon: ClipboardCheck,
+    tone: "amber",
   },
   {
     title: "Sınav Oluştur",
     description: "Yeni sınav veya quiz hazırla.",
     href: "/dashboard/teacher/exams/new",
-    icon: FileText
+    icon: FileText,
+    tone: "rose",
   },
   {
     title: "Öğrenciler",
     description: "Öğrenci listesini ve ilerlemeyi gör.",
     href: "/dashboard/teacher/students",
-    icon: GraduationCap
-  }
-];
+    icon: GraduationCap,
+    tone: "slate",
+  },
+] satisfies Array<{
+  title: string
+  description: string
+  href: string
+  icon: LucideIcon
+  tone: DashboardActionCardProps["tone"]
+}>
 
 export function TeacherDashboardHome() {
   return (
     <div className="space-y-8">
-      <section className="rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-700 to-sky-600 p-6 text-white shadow-lg md:p-8">
-        <p className="text-sm font-bold uppercase tracking-[0.24em] text-amber-300">
-          Öğretmen Paneli
-        </p>
-
-        <div className="mt-4 max-w-3xl">
-          <h2 className="text-3xl font-black tracking-tight md:text-4xl">
-            Derslerini, öğrencilerini ve içeriklerini tek panelden yönet.
-          </h2>
-
-          <p className="mt-4 text-sm leading-7 text-white/80 md:text-base">
-            Öğretmen paneli; kurs, canlı ders, ödev, sınav ve öğrenci yönetimi
-            için geliştiriliyor.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        eyebrow="Öğretmen Paneli"
+        title="Derslerini, öğrencilerini ve içeriklerini tek panelden yönet."
+        description="Öğretmen paneli; kurs, canlı ders, ödev, sınav ve öğrenci yönetimi için geliştiriliyor."
+        variant="gradient"
+      />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (
-          <div
+          <DashboardStatCard
             key={item.title}
-            className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-bold text-slate-500">
-                  {item.title}
-                </p>
-                <p className="mt-2 text-3xl font-black text-slate-950">
-                  {item.value}
-                </p>
-              </div>
-
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                <item.icon className="size-6" />
-              </div>
-            </div>
-
-            <p className="mt-3 text-sm text-slate-500">{item.description}</p>
-          </div>
+            title={item.title}
+            value={item.value}
+            description={item.description}
+            icon={item.icon}
+            tone={item.tone}
+          />
         ))}
       </section>
 
       <section>
         <div className="mb-4">
-          <h3 className="text-xl font-black text-slate-950">Hızlı işlemler</h3>
+          <h2 className="text-xl font-black text-slate-950">Hızlı işlemler</h2>
           <p className="mt-1 text-sm text-slate-500">
             Öğretmenin en sık kullanacağı gerçek route bağlantıları.
           </p>
@@ -124,26 +132,17 @@ export function TeacherDashboardHome() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {quickActions.map((item) => (
-            <Link
+            <DashboardActionCard
               key={item.href}
+              title={item.title}
+              description={item.description}
               href={item.href}
-              className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <item.icon className="size-6" />
-              </div>
-
-              <h4 className="mt-5 text-lg font-black text-slate-950">
-                {item.title}
-              </h4>
-
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {item.description}
-              </p>
-            </Link>
+              icon={item.icon}
+              tone={item.tone}
+            />
           ))}
         </div>
       </section>
     </div>
-  );
+  )
 }
