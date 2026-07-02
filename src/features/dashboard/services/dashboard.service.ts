@@ -19,12 +19,11 @@ type AuthProfileShape = {
 
 const fallbackDashboardUser: DashboardUser = {
   id: "dev-user",
-  fullName: "Parsmatematik Admin",
-  email: "admin@parsmatematik.com",
-  role: "admin",
-  avatarUrl: null
-};
-
+  fullName: "Demo Öğrenci",
+  email: "demo@parsmatematik.com",
+  role: "student",
+  avatarUrl: null,
+}
 function normalizeDashboardUser(profile: AuthProfileShape): DashboardUser {
   return {
     id: profile.id ?? profile.userId ?? "unknown-user",
@@ -164,12 +163,13 @@ const parentNavGroups: DashboardNavGroup[] = [
     items: [
       {
         title: "Veli Paneli",
-        href: "/dashboard/parent",
-        icon: "dashboard"
-      }
-    ]
-  }
-];
+        href: "/dashboard",
+        icon: "dashboard",
+        badge: "Sonra",
+      },
+    ],
+  },
+]
 
 export function getDashboardNavGroups(role: UserRole): DashboardNavGroup[] {
   if (role === "admin") {

@@ -46,7 +46,7 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
 export const ROLE_DASHBOARD_PATHS: Record<UserRole, string> = {
   student: "/dashboard/student",
   teacher: "/dashboard/teacher",
-  parent: "/dashboard/parent",
+  parent: "/dashboard",
   admin: "/dashboard/admin"
 };
 

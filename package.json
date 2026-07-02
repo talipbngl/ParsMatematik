@@ -14,6 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run type-check && npm run lint",
+    "verify": "npm run type-check && npm run build",
     "clean": "rimraf .next node_modules package-lock.json",
     "db:types": "supabase gen types typescript --local > src/shared/types/database.types.ts"
   },
