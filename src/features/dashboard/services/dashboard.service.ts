@@ -1,50 +1,34 @@
-import { getCurrentAuthProfile } from "@/features/auth/services/auth.service";
-import type { UserRole } from "@/shared/types/role.types";
+import { redirect } from "next/navigation"
+
+import { getCurrentAuthProfile } from "@/features/auth/services/auth.service"
+import type { UserRole } from "@/shared/types/role.types"
 
 import type {
   DashboardNavGroup,
   DashboardUser
-} from "../types/dashboard.types";
-
-type AuthProfileShape = {
-  id?: string | undefined;
-  userId?: string | undefined;
-  email?: string | null | undefined;
-  fullName?: string | null | undefined;
-  full_name?: string | null | undefined;
-  role?: UserRole | null | undefined;
-  avatarUrl?: string | null | undefined;
-  avatar_url?: string | null | undefined;
-};
-
-const fallbackDashboardUser: DashboardUser = {
-  id: "dev-user",
-  fullName: "Demo Öğrenci",
-  email: "demo@parsmatematik.com",
-  role: "student",
-  avatarUrl: null,
-}
-function normalizeDashboardUser(profile: AuthProfileShape): DashboardUser {
-  return {
-    id: profile.id ?? profile.userId ?? "unknown-user",
-    fullName: profile.fullName ?? profile.full_name ?? "Parsmatematik Kullanıcı",
-    email: profile.email ?? "kullanici@parsmatematik.com",
-    role: profile.role ?? "student",
-    avatarUrl: profile.avatarUrl ?? profile.avatar_url ?? null
-  };
-}
+} from "../types/dashboard.types"
 
 export async function getCurrentDashboardUser(): Promise<DashboardUser> {
   try {
-    const profile = (await getCurrentAuthProfile()) as AuthProfileShape | null;
+    const profile = await getCurrentAuthProfile()
 
     if (!profile) {
-      return fallbackDashboardUser;
+      redirect("/auth/login")
     }
 
-    return normalizeDashboardUser(profile);
+    if (!profile.isActive) {
+      redirect("/auth/login")
+    }
+
+    return {
+      id: profile.id,
+      fullName: profile.fullName,
+      email: profile.email,
+      role: profile.role,
+      avatarUrl: profile.avatarUrl
+    }
   } catch {
-    return fallbackDashboardUser;
+    redirect("/auth/login")
   }
 }
 
@@ -79,7 +63,7 @@ const adminNavGroups: DashboardNavGroup[] = [
       }
     ]
   }
-];
+]
 
 const teacherNavGroups: DashboardNavGroup[] = [
   {
@@ -117,7 +101,7 @@ const teacherNavGroups: DashboardNavGroup[] = [
       }
     ]
   }
-];
+]
 
 const studentNavGroups: DashboardNavGroup[] = [
   {
@@ -155,7 +139,7 @@ const studentNavGroups: DashboardNavGroup[] = [
       }
     ]
   }
-];
+]
 
 const parentNavGroups: DashboardNavGroup[] = [
   {
@@ -163,28 +147,28 @@ const parentNavGroups: DashboardNavGroup[] = [
     items: [
       {
         title: "Veli Paneli",
-        href: "/dashboard",
+        href: "/dashboard/parent",
         icon: "dashboard",
-        badge: "Sonra",
-      },
-    ],
-  },
+        badge: "Sonra"
+      }
+    ]
+  }
 ]
 
 export function getDashboardNavGroups(role: UserRole): DashboardNavGroup[] {
   if (role === "admin") {
-    return adminNavGroups;
+    return adminNavGroups
   }
 
   if (role === "teacher") {
-    return teacherNavGroups;
+    return teacherNavGroups
   }
 
   if (role === "parent") {
-    return parentNavGroups;
+    return parentNavGroups
   }
 
-  return studentNavGroups;
+  return studentNavGroups
 }
 
 export function getDashboardRoleLabel(role: UserRole): string {
@@ -193,9 +177,9 @@ export function getDashboardRoleLabel(role: UserRole): string {
     teacher: "Öğretmen",
     student: "Öğrenci",
     parent: "Veli"
-  };
+  }
 
-  return labels[role];
+  return labels[role]
 }
 
 export function getDashboardHomePath(role: UserRole): string {
@@ -204,7 +188,7 @@ export function getDashboardHomePath(role: UserRole): string {
     teacher: "/dashboard/teacher",
     student: "/dashboard/student",
     parent: "/dashboard/parent"
-  };
+  }
 
-  return paths[role];
+  return paths[role]
 }
