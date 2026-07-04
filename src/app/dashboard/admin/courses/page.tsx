@@ -1,7 +1,18 @@
-import { Archive, BookOpen, BookPlus, CheckCircle2, FilePenLine, Users } from "lucide-react"
+import Link from "next/link"
+import {
+  Archive,
+  BookOpen,
+  BookPlus,
+  CheckCircle2,
+  FilePenLine,
+  Users
+} from "lucide-react"
 
 import { CourseList } from "@/features/courses/components/CourseList"
-import { getCourseStats, getCourses } from "@/features/courses/services/courses.service"
+import {
+  getCourseStats,
+  getCourses
+} from "@/features/courses/services/courses.service"
 import { PageHeader } from "@/shared/components/layout/PageHeader"
 import { SectionHeader } from "@/shared/components/layout/SectionHeader"
 import { DashboardStatCard } from "@/shared/components/ui/DashboardStatCard"
@@ -14,17 +25,17 @@ export default async function AdminCoursesPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="Kurs Yönetimi"
-        title="Tüm Kurslar"
-        description="Admin burada tüm kursları görüp düzenleyecek. Şimdilik mock veriyle çalışıyor."
+        title="Kurslar"
+        description="Admin kursları buradan oluşturur, yayın durumunu takip eder ve ileride öğretmen/öğrenci atamalarını yönetir."
         variant="card"
         actions={
-          <button
-            type="button"
+          <Link
+            href="/dashboard/admin/courses/new"
             className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-indigo-700"
           >
             <BookPlus className="size-4" />
             Kurs Ekle
-          </button>
+          </Link>
         }
       />
 
@@ -36,6 +47,7 @@ export default async function AdminCoursesPage() {
           icon={BookOpen}
           tone="indigo"
         />
+
         <DashboardStatCard
           title="Yayında"
           value={String(stats.publishedCourses)}
@@ -43,6 +55,7 @@ export default async function AdminCoursesPage() {
           icon={CheckCircle2}
           tone="emerald"
         />
+
         <DashboardStatCard
           title="Taslak"
           value={String(stats.draftCourses)}
@@ -50,6 +63,7 @@ export default async function AdminCoursesPage() {
           icon={FilePenLine}
           tone="amber"
         />
+
         <DashboardStatCard
           title="Arşiv"
           value={String(stats.archivedCourses)}
@@ -57,6 +71,7 @@ export default async function AdminCoursesPage() {
           icon={Archive}
           tone="slate"
         />
+
         <DashboardStatCard
           title="Kayıtlı Öğrenci"
           value={String(stats.totalEnrollments)}
@@ -69,10 +84,15 @@ export default async function AdminCoursesPage() {
       <section className="space-y-4">
         <SectionHeader
           title="Kurs Listesi"
-          description={`${courses.length} kurs listeleniyor. Gerçek Supabase bağlantısı gelince admin tüm kursları buradan yönetecek.`}
+          description={`${courses.length} kurs listeleniyor. Bu liste Supabase courses tablosundan geliyor.`}
         />
 
-        <CourseList courses={courses} audience="admin" />
+        <CourseList
+          courses={courses}
+          audience="admin"
+          emptyTitle="Henüz kurs oluşturulmadı"
+          emptyDescription="İlk kursunu oluşturmak için Kurs Ekle butonunu kullan."
+        />
       </section>
     </div>
   )
