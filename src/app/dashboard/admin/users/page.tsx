@@ -1,5 +1,6 @@
-import { UserPlus, ShieldCheck, UserCheck, Users } from "lucide-react"
+import { ShieldCheck, UserCheck, Users } from "lucide-react"
 
+import { CreateUserDialog } from "@/features/users/components/CreateUserDialog"
 import { UserTable } from "@/features/users/components/UserTable"
 import { getUsers, getUserStats } from "@/features/users/services/users.service"
 import { PageHeader } from "@/shared/components/layout/PageHeader"
@@ -15,17 +16,9 @@ export default async function AdminUsersPage() {
       <PageHeader
         eyebrow="Kullanıcı Yönetimi"
         title="Kullanıcılar"
-        description="Adminin öğrenci, öğretmen, veli ve admin hesaplarını yönetmesi için hazırlanıyor. Şu an mock veriyle çalışıyor."
+        description="Admin öğrenci, öğretmen, veli ve admin hesaplarını buradan yönetebilir."
         variant="card"
-        actions={
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-indigo-700"
-          >
-            <UserPlus className="size-4" />
-            Kullanıcı Ekle
-          </button>
-        }
+        actions={<CreateUserDialog />}
       />
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -62,7 +55,7 @@ export default async function AdminUsersPage() {
       <section className="space-y-4">
         <SectionHeader
           title="Kullanıcı Listesi"
-          description={`${users.length} kullanıcı listeleniyor. Supabase bağlantısından sonra bu liste gerçek profillerden gelecek.`}
+          description={`${users.length} kullanıcı listeleniyor. Bu liste Supabase profiles tablosundan geliyor.`}
         />
 
         <UserTable users={users} />

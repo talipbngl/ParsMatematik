@@ -92,12 +92,6 @@ export async function signUpWithEmail(
     Açık ise kullanıcı e-posta doğrulaması yapana kadar session null olabilir.
     Profile kaydını burada best-effort oluşturuyoruz.
   */
-  await upsertProfile({
-    id: data.user.id,
-    email: data.user.email ?? values.email,
-    fullName: values.fullName,
-    role: values.role
-  });
 
   return {
     userId: data.user.id,
