@@ -93,6 +93,19 @@ export default async function AdminCoursesPage() {
           emptyTitle="Henüz kurs oluşturulmadı"
           emptyDescription="İlk kursunu oluşturmak için Kurs Ekle butonunu kullan."
         />
+        {courses.length > 0 ? (
+  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+    {courses.map((course) => (
+      <Link
+        key={course.id}
+        href={`/dashboard/admin/courses/${course.id}/manage`}
+        className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-black text-slate-700 shadow-sm transition hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+      >
+        {course.title} — Atamaları Yönet
+      </Link>
+    ))}
+  </div>
+) : null}
       </section>
     </div>
   )
