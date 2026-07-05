@@ -1,104 +1,265 @@
+import { createClient } from "@/lib/supabase/server"
+
 import type {
   LiveLessonListItem,
   LiveLessonStats,
   LiveLessonStatus
-} from "../types/live-lessons.types";
+} from "../types/live-lessons.types"
 
-const mockLiveLessons: LiveLessonListItem[] = [
-  {
-    id: "live-lgs-1",
-    courseId: "course-lgs-8",
-    courseTitle: "8. Sınıf LGS Matematik",
-    teacherId: "user-teacher-1",
-    teacherName: "Ayşe Öğretmen",
-    title: "Çarpanlar ve Katlar Canlı Ders",
-    description: "LGS için temel konu anlatımı ve yeni nesil soru çözümü.",
-    startsAt: "2026-07-04T18:00:00.000Z",
-    endsAt: "2026-07-04T19:30:00.000Z",
-    durationMinutes: 90,
-    meetingUrl: "https://meet.google.com/example-lgs",
-    recordingUrl: null,
-    provider: "google-meet",
-    status: "scheduled",
-    attendeeCount: 18,
-    createdAt: "2026-07-02T09:00:00.000Z",
-    updatedAt: "2026-07-02T09:00:00.000Z"
-  },
-  {
-    id: "live-tyt-1",
-    courseId: "course-tyt",
-    courseTitle: "TYT Matematik Kampı",
-    teacherId: "user-teacher-2",
-    teacherName: "Mehmet Öğretmen",
-    title: "TYT Problemler Giriş",
-    description: "Problem türleri ve çözüm stratejileri.",
-    startsAt: "2026-07-05T17:00:00.000Z",
-    endsAt: "2026-07-05T18:30:00.000Z",
-    durationMinutes: 90,
-    meetingUrl: "https://zoom.us/j/example-tyt",
-    recordingUrl: null,
-    provider: "zoom",
-    status: "scheduled",
-    attendeeCount: 14,
-    createdAt: "2026-07-02T10:00:00.000Z",
-    updatedAt: "2026-07-02T10:00:00.000Z"
-  },
-  {
-    id: "live-9-1",
-    courseId: "course-9",
-    courseTitle: "9. Sınıf Matematik",
-    teacherId: "user-teacher-1",
-    teacherName: "Ayşe Öğretmen",
-    title: "Kümeler Tekrar Dersi",
-    description: "Kümeler konusu tekrar ve soru çözümü.",
-    startsAt: "2026-07-01T16:00:00.000Z",
-    endsAt: "2026-07-01T17:00:00.000Z",
-    durationMinutes: 60,
-    meetingUrl: "https://meet.google.com/example-9",
-    recordingUrl: "https://drive.google.com/example-recording",
-    provider: "google-meet",
-    status: "completed",
-    attendeeCount: 10,
-    createdAt: "2026-07-01T08:00:00.000Z",
-    updatedAt: "2026-07-01T18:00:00.000Z"
+type LiveLessonRow = {
+  id: string
+  course_id: string
+  teacher_id: string | null
+  title: string
+  description: string | null
+  starts_at: string
+  ends_at: string | null
+  duration_minutes?: number | null
+  meeting_url: string | null
+  recording_url?: string | null
+  provider?: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+type CourseRow = {
+  id: string
+  title: string
+}
+
+type ProfileRow = {
+  id: string
+  full_name: string
+}
+
+type EnrollmentRow = {
+  course_id: string
+  status: string
+}
+
+function countEnrollmentsByCourse(
+  enrollments: EnrollmentRow[]
+): Record<string, number> {
+  return enrollments.reduce<Record<string, number>>((acc, enrollment) => {
+    if (!["active", "completed"].includes(enrollment.status)) {
+      return acc
+    }
+
+    acc[enrollment.course_id] = (acc[enrollment.course_id] ?? 0) + 1
+    return acc
+  }, {})
+}
+function getDurationMinutes(lesson: LiveLessonRow): number {
+  if (lesson.duration_minutes) {
+    return lesson.duration_minutes
   }
-];
+
+  if (!lesson.ends_at) {
+    return 60
+  }
+
+  const startsAt = new Date(lesson.starts_at).getTime()
+  const endsAt = new Date(lesson.ends_at).getTime()
+
+  if (Number.isNaN(startsAt) || Number.isNaN(endsAt) || endsAt <= startsAt) {
+    return 60
+  }
+
+  return Math.round((endsAt - startsAt) / 1000 / 60)
+}
+
+async function buildLiveLessonList(
+  lessons: LiveLessonRow[]
+): Promise<LiveLessonListItem[]> {
+  if (lessons.length === 0) {
+    return []
+  }
+
+  const supabase = await createClient()
+
+  const courseIds = Array.from(new Set(lessons.map((lesson) => lesson.course_id)))
+  const teacherIds = Array.from(
+    new Set(
+      lessons
+        .map((lesson) => lesson.teacher_id)
+        .filter((teacherId): teacherId is string => Boolean(teacherId))
+    )
+  )
+
+  const [coursesResult, teachersResult, enrollmentsResult] = await Promise.all([
+    supabase.from("courses").select("id, title").in("id", courseIds),
+    teacherIds.length > 0
+      ? supabase.from("profiles").select("id, full_name").in("id", teacherIds)
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("course_enrollments")
+      .select("course_id, status")
+      .in("course_id", courseIds)
+  ])
+
+  const courses = (coursesResult.data as CourseRow[] | null) ?? []
+  const teachers = (teachersResult.data as ProfileRow[] | null) ?? []
+  const enrollments = (enrollmentsResult.data as EnrollmentRow[] | null) ?? []
+
+  const courseTitleById = courses.reduce<Record<string, string>>(
+    (acc, course) => {
+      acc[course.id] = course.title
+      return acc
+    },
+    {}
+  )
+
+  const teacherNameById = teachers.reduce<Record<string, string>>(
+    (acc, teacher) => {
+      acc[teacher.id] = teacher.full_name
+      return acc
+    },
+    {}
+  )
+
+  const enrollmentCountByCourse = countEnrollmentsByCourse(enrollments)
+
+  return lessons.map((lesson) => ({
+    id: lesson.id,
+    courseId: lesson.course_id,
+    courseTitle: courseTitleById[lesson.course_id] ?? "Bilinmeyen kurs",
+    teacherId: lesson.teacher_id ?? "",
+    teacherName: lesson.teacher_id
+      ? teacherNameById[lesson.teacher_id] ?? "Öğretmen"
+      : "Öğretmen",
+    title: lesson.title,
+    description: lesson.description,
+    startsAt: lesson.starts_at,
+    endsAt: lesson.ends_at,
+    durationMinutes: getDurationMinutes(lesson),
+    meetingUrl: lesson.meeting_url,
+    recordingUrl: lesson.recording_url ?? null,
+    provider: (lesson.provider ?? "external") as LiveLessonListItem["provider"],
+    status: lesson.status as LiveLessonStatus,
+    attendeeCount: enrollmentCountByCourse[lesson.course_id] ?? 0,
+    createdAt: lesson.created_at,
+    updatedAt: lesson.updated_at
+  }))
+}
 
 export async function getLiveLessons(): Promise<LiveLessonListItem[]> {
-  return mockLiveLessons;
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("live_lessons")
+    .select("*")
+    .order("starts_at", { ascending: true })
+
+  if (error) {
+    console.error("[getLiveLessons]", error.message)
+    return []
+  }
+
+  return buildLiveLessonList((data as unknown as LiveLessonRow[] | null) ?? [])
 }
 
 export async function getTeacherLiveLessons(
-  teacherId = "user-teacher-1"
+  teacherId?: string
 ): Promise<LiveLessonListItem[]> {
-  return mockLiveLessons.filter((lesson) => lesson.teacherId === teacherId);
+  const supabase = await createClient()
+
+  let resolvedTeacherId = teacherId
+
+  if (!resolvedTeacherId) {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
+
+    resolvedTeacherId = user?.id
+  }
+
+  if (!resolvedTeacherId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from("live_lessons")
+    .select("*")
+    .eq("teacher_id", resolvedTeacherId)
+    .order("starts_at", { ascending: true })
+
+  if (error) {
+    console.error("[getTeacherLiveLessons]", error.message)
+    return []
+  }
+
+  return buildLiveLessonList((data as unknown as LiveLessonRow[] | null) ?? [])
 }
 
 export async function getStudentLiveLessons(): Promise<LiveLessonListItem[]> {
-  return mockLiveLessons.filter((lesson) => lesson.status !== "cancelled");
+  return getLiveLessons()
 }
 
 export async function getLiveLessonById(
   id: string
 ): Promise<LiveLessonListItem | null> {
-  return mockLiveLessons.find((lesson) => lesson.id === id) ?? null;
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("live_lessons")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error || !data) {
+    return null
+  }
+
+  const lessons = await buildLiveLessonList([data as unknown as LiveLessonRow])
+  return lessons[0] ?? null
+}
+
+async function getCurrentUserRole(): Promise<{
+  id: string
+  role: string
+} | null> {
+  const supabase = await createClient()
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return null
+  }
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  if (!data) {
+    return null
+  }
+
+  return data as { id: string; role: string }
 }
 
 export async function getLiveLessonStats(): Promise<LiveLessonStats> {
+  const currentUser = await getCurrentUserRole()
+
+  const lessons =
+    currentUser?.role === "teacher"
+      ? await getTeacherLiveLessons(currentUser.id)
+      : await getLiveLessons()
+
   return {
-    totalLessons: mockLiveLessons.length,
-    scheduledLessons: mockLiveLessons.filter(
-      (lesson) => lesson.status === "scheduled"
-    ).length,
-    liveLessons: mockLiveLessons.filter((lesson) => lesson.status === "live")
+    totalLessons: lessons.length,
+    scheduledLessons: lessons.filter((lesson) => lesson.status === "scheduled")
       .length,
-    completedLessons: mockLiveLessons.filter(
-      (lesson) => lesson.status === "completed"
-    ).length,
-    cancelledLessons: mockLiveLessons.filter(
-      (lesson) => lesson.status === "cancelled"
-    ).length
-  };
+    liveLessons: lessons.filter((lesson) => lesson.status === "live").length,
+    completedLessons: lessons.filter((lesson) => lesson.status === "completed")
+      .length,
+    cancelledLessons: lessons.filter((lesson) => lesson.status === "cancelled")
+      .length
+  }
 }
 
 export function getLiveLessonStatusLabel(status: LiveLessonStatus): string {
@@ -107,9 +268,9 @@ export function getLiveLessonStatusLabel(status: LiveLessonStatus): string {
     live: "Canlı",
     completed: "Tamamlandı",
     cancelled: "İptal"
-  };
+  }
 
-  return labels[status];
+  return labels[status]
 }
 
 export function formatLiveLessonDate(value: string): string {
@@ -119,5 +280,5 @@ export function formatLiveLessonDate(value: string): string {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(value));
+  }).format(new Date(value))
 }

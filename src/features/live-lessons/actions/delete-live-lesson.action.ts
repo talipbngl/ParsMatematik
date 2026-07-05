@@ -1,26 +1,46 @@
-"use server";
+"use server"
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "next/cache"
+
+import { requireRole } from "@/lib/auth/require-role"
+import { createClient } from "@/lib/supabase/server"
 
 function getLiveLessonId(formData: FormData): string {
-  const value = formData.get("id");
+  const value = formData.get("id")
 
   if (typeof value !== "string") {
-    return "";
+    return ""
   }
 
-  return value.trim();
+  return value.trim()
 }
 
-export async function deleteLiveLessonAction(formData: FormData): Promise<void> {
-  const liveLessonId = getLiveLessonId(formData);
+export async function deleteLiveLessonAction(
+  formData: FormData
+): Promise<void> {
+  await requireRole(["teacher", "admin"])
+
+  const liveLessonId = getLiveLessonId(formData)
 
   if (!liveLessonId) {
-    return;
+    return
   }
 
-  // TODO: Supabase tarafında hard delete yerine status='cancelled' yapılacak.
+  const supabase = await createClient()
 
-  revalidatePath("/dashboard/teacher/live-lessons");
-  revalidatePath("/dashboard/student/live-lessons");
+  const payload = {
+    status: "cancelled"
+  } as never
+
+  const { error } = await supabase
+    .from("live_lessons")
+    .update(payload)
+    .eq("id", liveLessonId)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  revalidatePath("/dashboard/teacher/live-lessons")
+  revalidatePath("/dashboard/student/live-lessons")
 }
