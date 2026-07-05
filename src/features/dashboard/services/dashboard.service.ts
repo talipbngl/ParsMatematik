@@ -74,6 +74,11 @@ const adminNavGroups: DashboardNavGroup[] = [
         icon: "file"
       },
       {
+       title: "Ödevler",
+        href: "/dashboard/admin/assignments",
+       icon: "clipboard"
+      },
+      {
         title: "Ödemeler",
         href: "/dashboard/admin/payments",
         icon: "credit-card"

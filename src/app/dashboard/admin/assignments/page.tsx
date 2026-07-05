@@ -1,27 +1,26 @@
 import { CheckCircle2, ClipboardList, Lock, Send } from "lucide-react"
-import { AssignmentCard } from "@/features/assignments/components/AssignmentCard"
-import { AssignmentSubmissionForm } from "@/features/assignments/components/AssignmentSubmissionForm"
+import { AssignmentList } from "@/features/assignments/components/AssignmentList"
 import {
-  getStudentAssignments,
-  getStudentAssignmentStats
+  getAssignments,
+  getAssignmentStats
 } from "@/features/assignments/services/assignments.service"
 
-export default async function StudentAssignmentsPage() {
-  const assignments = await getStudentAssignments()
-  const stats = await getStudentAssignmentStats()
+export default async function AdminAssignmentsPage() {
+  const assignments = await getAssignments()
+  const stats = await getAssignmentStats()
 
   return (
     <div className="space-y-6">
       <div>
         <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
-          Ödevlerim
+          Admin
         </p>
         <h1 className="mt-2 text-3xl font-black text-slate-950">
-          Ödev takip ve teslim
+          Tüm ödevler
         </h1>
         <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500">
-          Kayıtlı olduğun kurslara ait yayınlanmış ödevleri burada görebilir ve
-          teslim edebilirsin.
+          Platformdaki tüm kurs ödevlerini ve temel teslim istatistiklerini
+          burada görüntüleyebilirsin.
         </p>
       </div>
 
@@ -58,7 +57,7 @@ export default async function StudentAssignmentsPage() {
 
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-slate-500">Teslimler</p>
+            <p className="text-sm font-bold text-slate-500">Teslim</p>
             <Send className="h-5 w-5 text-indigo-400" />
           </div>
           <p className="mt-2 text-3xl font-black text-indigo-600">
@@ -67,38 +66,12 @@ export default async function StudentAssignmentsPage() {
         </div>
       </div>
 
-      {assignments.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center">
-          <h3 className="text-lg font-black text-slate-950">
-            Henüz ödevin yok
-          </h3>
-          <p className="mt-2 text-sm font-medium text-slate-500">
-            Öğretmenin ödev yayınladığında burada görünecek.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-5">
-          {assignments.map((assignment) => (
-            <div key={assignment.id} className="space-y-3">
-              <AssignmentCard assignment={assignment} audience="student" />
-
-              {assignment.status === "published" ? (
-                <AssignmentSubmissionForm assignmentId={assignment.id} />
-              ) : (
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <h3 className="text-sm font-black text-slate-700">
-                    Teslim kapalı
-                  </h3>
-                  <p className="mt-1 text-sm font-medium text-slate-500">
-                    Bu ödev şu anda teslim almıyor. Öğretmen tekrar açarsa
-                    teslim formu burada görünecek.
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      <AssignmentList
+        assignments={assignments}
+        audience="teacher"
+        emptyTitle="Henüz ödev yok"
+        emptyDescription="Öğretmenler ödev oluşturduğunda burada listelenecek."
+      />
     </div>
   )
 }

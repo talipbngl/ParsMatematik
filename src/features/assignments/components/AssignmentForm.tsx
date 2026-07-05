@@ -1,15 +1,28 @@
-import { getCoursesForTeacher } from "@/features/courses/services/courses.service";
-
-import { createAssignmentAction } from "../actions/create-assignment.action";
+import { getCoursesForTeacher } from "@/features/courses/services/courses.service"
+import { createAssignmentAction } from "../actions/create-assignment.action"
 
 const statusOptions = [
   { value: "draft", label: "Taslak" },
   { value: "published", label: "Yayında" },
   { value: "closed", label: "Kapandı" }
-];
+]
 
 export async function AssignmentForm() {
-  const courses = await getCoursesForTeacher();
+  const courses = await getCoursesForTeacher()
+
+  if (courses.length === 0) {
+    return (
+      <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+        <p className="text-sm font-black text-amber-900">
+          Ödev oluşturmak için önce sana atanmış en az bir kurs olmalı.
+        </p>
+        <p className="mt-2 text-sm font-medium text-amber-800">
+          Admin panelinden kurs-öğretmen ataması yapıldıktan sonra burada kurs
+          seçimi görünecek.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <form
@@ -17,17 +30,15 @@ export async function AssignmentForm() {
       className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div>
-        <p className="text-sm font-bold uppercase tracking-[0.22em] text-indigo-600">
+        <p className="text-sm font-black uppercase tracking-[0.25em] text-indigo-600">
           Yeni Ödev
         </p>
-
-        <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+        <h2 className="mt-2 text-2xl font-black text-slate-950">
           Ödev oluştur
         </h2>
-
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Öğretmen burada kursa bağlı ödev oluşturacak. Gerçek kayıt Supabase
-          bağlantısından sonra yapılacak.
+        <p className="mt-2 text-sm font-medium text-slate-500">
+          Seçtiğin kursa bağlı ödev oluştur. Yayında durumundaki ödevleri
+          öğrenciler görebilir ve teslim edebilir.
         </p>
       </div>
 
@@ -39,12 +50,11 @@ export async function AssignmentForm() {
           >
             Kurs
           </label>
-
           <select
             id="courseId"
             name="courseId"
             required
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
           >
             {courses.map((course) => (
               <option key={course.id} value={course.id}>
@@ -61,12 +71,12 @@ export async function AssignmentForm() {
           >
             Durum
           </label>
-
           <select
             id="status"
             name="status"
             defaultValue="published"
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            required
+            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -83,14 +93,12 @@ export async function AssignmentForm() {
           >
             Başlık
           </label>
-
           <input
             id="title"
             name="title"
             type="text"
             required
-            minLength={3}
-            placeholder="Örn: Problemler ödevi"
+            placeholder="Örn: Fonksiyonlar çalışma ödevi"
             className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
           />
         </div>
@@ -102,14 +110,13 @@ export async function AssignmentForm() {
           >
             Açıklama
           </label>
-
           <textarea
             id="description"
             name="description"
             rows={5}
             required
-            placeholder="Ödev açıklamasını, yapılacak soruları veya teslim talimatını yaz."
-            className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+            placeholder="Öğrencinin ne yapması gerektiğini açıkça yaz."
+            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
           />
         </div>
 
@@ -120,7 +127,6 @@ export async function AssignmentForm() {
           >
             Teslim tarihi
           </label>
-
           <input
             id="dueAt"
             name="dueAt"
@@ -136,7 +142,6 @@ export async function AssignmentForm() {
           >
             Maksimum puan
           </label>
-
           <input
             id="maxScore"
             name="maxScore"
@@ -157,5 +162,5 @@ export async function AssignmentForm() {
         </button>
       </div>
     </form>
-  );
+  )
 }
