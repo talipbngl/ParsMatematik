@@ -55,6 +55,14 @@ function normalizeMaterialType(value: string | null | undefined): MaterialType {
     return value as MaterialType
   }
 
+  if (value === "video_link") {
+    return "video"
+  }
+
+  if (value === "external_link") {
+    return "link"
+  }
+
   return "link"
 }
 
@@ -74,6 +82,27 @@ function isExternalUrl(value: string | null | undefined): boolean {
 
 function isPublished(material: MaterialDbRow): boolean {
   return material.is_published !== false
+}
+
+async function getSignedMaterialUrl(
+  filePath: string | null | undefined
+): Promise<string | null> {
+  if (!filePath || isExternalUrl(filePath)) {
+    return filePath ?? null
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.storage
+    .from("materials")
+    .createSignedUrl(filePath, 60 * 60)
+
+  if (error) {
+    console.error("[materials.getSignedMaterialUrl]", error.message)
+    return null
+  }
+
+  return data.signedUrl
 }
 
 async function getCourseTitleMap(
@@ -114,31 +143,41 @@ async function mapMaterialRows(
   const courseIds = Array.from(new Set(rows.map((row) => row.course_id)))
   const courseTitleById = await getCourseTitleMap(courseIds)
 
-  return rows.map((row) => {
-    const externalUrl =
-      row.external_url ?? (isExternalUrl(row.file_path) ? row.file_path : null)
+  return Promise.all(
+    rows.map(async (row) => {
+      const externalUrl =
+        row.external_url ??
+        (isExternalUrl(row.file_path) ? row.file_path : null) ??
+        (isExternalUrl(row.file_url) ? row.file_url : null)
 
-    const filePath = row.file_path ?? null
-    const fileUrl = row.file_url ?? externalUrl ?? filePath
+      const filePath =
+        row.file_path && !isExternalUrl(row.file_path) ? row.file_path : null
 
-    return {
-      id: row.id,
-      courseId: row.course_id,
-      courseTitle: courseTitleById[row.course_id] ?? "Bilinmeyen kurs",
-      title: row.title,
-      description: row.description ?? "",
-      type: normalizeMaterialType(row.type ?? row.file_type),
-      visibility: normalizeMaterialVisibility(row.visibility),
-      fileUrl,
-      externalUrl,
-      filePath,
-      mimeType: row.mime_type ?? null,
-      sizeBytes: row.size_bytes ?? null,
-      order: row.sort_order ?? 0,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
-    }
-  })
+      const signedFileUrl = filePath
+        ? await getSignedMaterialUrl(filePath)
+        : null
+
+      const fileUrl = externalUrl ?? signedFileUrl ?? row.file_url ?? null
+
+      return {
+        id: row.id,
+        courseId: row.course_id,
+        courseTitle: courseTitleById[row.course_id] ?? "Bilinmeyen kurs",
+        title: row.title,
+        description: row.description ?? "",
+        type: normalizeMaterialType(row.type ?? row.file_type),
+        visibility: normalizeMaterialVisibility(row.visibility),
+        fileUrl,
+        externalUrl,
+        filePath,
+        mimeType: row.mime_type ?? null,
+        sizeBytes: row.size_bytes ?? null,
+        order: row.sort_order ?? 0,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }
+    })
+  )
 }
 
 async function getMaterialsByCourseIds(
@@ -211,7 +250,10 @@ export async function getTeacherMaterials(): Promise<MaterialListItem[]> {
     .eq("teacher_id", user.id)
 
   if (error) {
-    console.error("[materials.getTeacherMaterials.course_teachers]", error.message)
+    console.error(
+      "[materials.getTeacherMaterials.course_teachers]",
+      error.message
+    )
     return []
   }
 
@@ -343,9 +385,8 @@ export function calculateMaterialStats(
     linkCount: materials.filter((material) => material.type === "link").length,
     imageCount: materials.filter((material) => material.type === "image")
       .length,
-    documentCount: materials.filter(
-      (material) => material.type === "document"
-    ).length
+    documentCount: materials.filter((material) => material.type === "document")
+      .length
   }
 }
 
