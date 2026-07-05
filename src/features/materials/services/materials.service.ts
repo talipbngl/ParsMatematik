@@ -1,119 +1,352 @@
+import { createClient } from "@/lib/supabase/server"
 import type {
   MaterialListItem,
   MaterialStats,
   MaterialType,
   MaterialVisibility
-} from "../types/materials.types";
+} from "../types/materials.types"
 
-const mockMaterials: MaterialListItem[] = [
-  {
-    id: "material-lgs-1",
-    courseId: "course-lgs-8",
-    courseTitle: "8. Sınıf LGS Matematik",
-    title: "Çarpanlar ve Katlar Konu Özeti",
-    description: "LGS hazırlık için PDF konu özeti ve örnek soru notları.",
-    type: "pdf",
-    visibility: "course",
-    fileUrl: "/mock/lgs-carpanlar-katlar.pdf",
-    externalUrl: null,
-    filePath: "/materials/lgs-carpanlar-katlar.pdf",
-    mimeType: "application/pdf",
-    sizeBytes: 1_250_000,
-    order: 1,
-    createdAt: "2026-07-02T09:00:00.000Z",
-    updatedAt: "2026-07-02T09:00:00.000Z"
-  },
-  {
-    id: "material-lgs-2",
-    courseId: "course-lgs-8",
-    courseTitle: "8. Sınıf LGS Matematik",
-    title: "Yeni Nesil Soru Çözümü",
-    description: "Çarpanlar ve katlar konusu için video çözüm bağlantısı.",
-    type: "video",
-    visibility: "course",
-    fileUrl: null,
-    externalUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    filePath: null,
-    mimeType: null,
-    sizeBytes: null,
-    order: 2,
-    createdAt: "2026-07-02T10:00:00.000Z",
-    updatedAt: "2026-07-02T10:00:00.000Z"
-  },
-  {
-    id: "material-tyt-1",
-    courseId: "course-tyt",
-    courseTitle: "TYT Matematik Kampı",
-    title: "Problemler Çalışma Kağıdı",
-    description: "Yaş, işçi, yüzde ve kar-zarar problemleri için çalışma.",
-    type: "document",
-    visibility: "course",
-    fileUrl: "/mock/tyt-problemler-calisma.docx",
-    externalUrl: null,
-    filePath: "/materials/tyt-problemler-calisma.docx",
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    sizeBytes: 840_000,
-    order: 1,
-    createdAt: "2026-07-02T11:00:00.000Z",
-    updatedAt: "2026-07-02T11:00:00.000Z"
-  },
-  {
-    id: "material-9-1",
-    courseId: "course-9",
-    courseTitle: "9. Sınıf Matematik",
-    title: "Kümeler Ek Kaynak",
-    description: "Kümeler konusu için harici kaynak bağlantısı.",
-    type: "link",
-    visibility: "public",
-    fileUrl: null,
-    externalUrl: "https://example.com/kumeler-kaynak",
-    filePath: null,
-    mimeType: null,
-    sizeBytes: null,
-    order: 1,
-    createdAt: "2026-07-01T09:00:00.000Z",
-    updatedAt: "2026-07-01T09:00:00.000Z"
+type MaterialDbRow = {
+  id: string
+  course_id: string
+  teacher_id?: string | null
+  uploader_id?: string | null
+  title: string
+  description?: string | null
+  type?: string | null
+  file_type?: string | null
+  visibility?: string | null
+  file_url?: string | null
+  file_path?: string | null
+  external_url?: string | null
+  mime_type?: string | null
+  size_bytes?: number | null
+  sort_order?: number | null
+  is_published?: boolean | null
+  created_at: string
+  updated_at: string
+}
+
+type CourseRow = {
+  id: string
+  title: string
+}
+
+type CourseIdRow = {
+  course_id: string
+}
+
+const materialTypes: MaterialType[] = [
+  "pdf",
+  "video",
+  "link",
+  "image",
+  "document"
+]
+
+const materialVisibilities: MaterialVisibility[] = [
+  "private",
+  "course",
+  "public"
+]
+
+function normalizeMaterialType(value: string | null | undefined): MaterialType {
+  if (value && materialTypes.includes(value as MaterialType)) {
+    return value as MaterialType
   }
-];
+
+  return "link"
+}
+
+function normalizeMaterialVisibility(
+  value: string | null | undefined
+): MaterialVisibility {
+  if (value && materialVisibilities.includes(value as MaterialVisibility)) {
+    return value as MaterialVisibility
+  }
+
+  return "course"
+}
+
+function isExternalUrl(value: string | null | undefined): boolean {
+  return Boolean(value?.startsWith("http://") || value?.startsWith("https://"))
+}
+
+function isPublished(material: MaterialDbRow): boolean {
+  return material.is_published !== false
+}
+
+async function getCourseTitleMap(
+  courseIds: string[]
+): Promise<Record<string, string>> {
+  if (courseIds.length === 0) {
+    return {}
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, title")
+    .in("id", courseIds)
+
+  if (error) {
+    console.error("[materials.getCourseTitleMap]", error.message)
+    return {}
+  }
+
+  return ((data as CourseRow[] | null) ?? []).reduce<Record<string, string>>(
+    (acc, course) => {
+      acc[course.id] = course.title
+      return acc
+    },
+    {}
+  )
+}
+
+async function mapMaterialRows(
+  rows: MaterialDbRow[]
+): Promise<MaterialListItem[]> {
+  if (rows.length === 0) {
+    return []
+  }
+
+  const courseIds = Array.from(new Set(rows.map((row) => row.course_id)))
+  const courseTitleById = await getCourseTitleMap(courseIds)
+
+  return rows.map((row) => {
+    const externalUrl =
+      row.external_url ?? (isExternalUrl(row.file_path) ? row.file_path : null)
+
+    const filePath = row.file_path ?? null
+    const fileUrl = row.file_url ?? externalUrl ?? filePath
+
+    return {
+      id: row.id,
+      courseId: row.course_id,
+      courseTitle: courseTitleById[row.course_id] ?? "Bilinmeyen kurs",
+      title: row.title,
+      description: row.description ?? "",
+      type: normalizeMaterialType(row.type ?? row.file_type),
+      visibility: normalizeMaterialVisibility(row.visibility),
+      fileUrl,
+      externalUrl,
+      filePath,
+      mimeType: row.mime_type ?? null,
+      sizeBytes: row.size_bytes ?? null,
+      order: row.sort_order ?? 0,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }
+  })
+}
+
+async function getMaterialsByCourseIds(
+  courseIds: string[],
+  options?: {
+    onlyPublished?: boolean
+    includePrivate?: boolean
+  }
+): Promise<MaterialListItem[]> {
+  if (courseIds.length === 0) {
+    return []
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .in("course_id", courseIds)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[materials.getMaterialsByCourseIds]", error.message)
+    return []
+  }
+
+  let rows = (data as unknown as MaterialDbRow[] | null) ?? []
+
+  if (options?.onlyPublished) {
+    rows = rows.filter(isPublished)
+  }
+
+  if (!options?.includePrivate) {
+    rows = rows.filter((row) => row.visibility !== "private")
+  }
+
+  return mapMaterialRows(rows)
+}
 
 export async function getMaterials(): Promise<MaterialListItem[]> {
-  return mockMaterials;
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[materials.getMaterials]", error.message)
+    return []
+  }
+
+  return mapMaterialRows((data as unknown as MaterialDbRow[] | null) ?? [])
+}
+
+export async function getTeacherMaterials(): Promise<MaterialListItem[]> {
+  const supabase = await createClient()
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from("course_teachers")
+    .select("course_id")
+    .eq("teacher_id", user.id)
+
+  if (error) {
+    console.error("[materials.getTeacherMaterials.course_teachers]", error.message)
+    return []
+  }
+
+  const courseIds = ((data as CourseIdRow[] | null) ?? []).map(
+    (row) => row.course_id
+  )
+
+  return getMaterialsByCourseIds(courseIds, {
+    includePrivate: true
+  })
+}
+
+export async function getStudentMaterials(): Promise<MaterialListItem[]> {
+  const supabase = await createClient()
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from("course_enrollments")
+    .select("course_id")
+    .eq("student_id", user.id)
+
+  if (error) {
+    console.error(
+      "[materials.getStudentMaterials.course_enrollments]",
+      error.message
+    )
+    return []
+  }
+
+  const courseIds = ((data as CourseIdRow[] | null) ?? []).map(
+    (row) => row.course_id
+  )
+
+  return getMaterialsByCourseIds(courseIds, {
+    onlyPublished: true,
+    includePrivate: false
+  })
 }
 
 export async function getMaterialsByCourseId(
   courseId: string
 ): Promise<MaterialListItem[]> {
-  return mockMaterials
-    .filter((material) => material.courseId === courseId)
-    .sort((a, b) => a.order - b.order);
+  const materials = await getMaterialsByCourseIds([courseId], {
+    onlyPublished: true,
+    includePrivate: false
+  })
+
+  return materials.sort((a, b) => a.order - b.order)
 }
 
 export async function getMaterialById(
   id: string
 ): Promise<MaterialListItem | null> {
-  return mockMaterials.find((material) => material.id === id) ?? null;
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[materials.getMaterialById]", error.message)
+    return null
+  }
+
+  if (!data) {
+    return null
+  }
+
+  const [material] = await mapMaterialRows([data as unknown as MaterialDbRow])
+
+  return material ?? null
 }
 
 export async function getPublicMaterials(): Promise<MaterialListItem[]> {
-  return mockMaterials.filter((material) => material.visibility === "public");
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from("materials")
+    .select("*")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("[materials.getPublicMaterials]", error.message)
+    return []
+  }
+
+  const rows = ((data as unknown as MaterialDbRow[] | null) ?? []).filter(
+    (row) => row.visibility === "public" && isPublished(row)
+  )
+
+  return mapMaterialRows(rows)
 }
 
 export async function getMaterialStats(): Promise<MaterialStats> {
+  const materials = await getMaterials()
+
+  return calculateMaterialStats(materials)
+}
+
+export async function getTeacherMaterialStats(): Promise<MaterialStats> {
+  const materials = await getTeacherMaterials()
+
+  return calculateMaterialStats(materials)
+}
+
+export async function getStudentMaterialStats(): Promise<MaterialStats> {
+  const materials = await getStudentMaterials()
+
+  return calculateMaterialStats(materials)
+}
+
+export function calculateMaterialStats(
+  materials: MaterialListItem[]
+): MaterialStats {
   return {
-    totalMaterials: mockMaterials.length,
-    pdfCount: mockMaterials.filter((material) => material.type === "pdf")
+    totalMaterials: materials.length,
+    pdfCount: materials.filter((material) => material.type === "pdf").length,
+    videoCount: materials.filter((material) => material.type === "video")
       .length,
-    videoCount: mockMaterials.filter((material) => material.type === "video")
+    linkCount: materials.filter((material) => material.type === "link").length,
+    imageCount: materials.filter((material) => material.type === "image")
       .length,
-    linkCount: mockMaterials.filter((material) => material.type === "link")
-      .length,
-    imageCount: mockMaterials.filter((material) => material.type === "image")
-      .length,
-    documentCount: mockMaterials.filter(
+    documentCount: materials.filter(
       (material) => material.type === "document"
     ).length
-  };
+  }
 }
 
 export function getMaterialTypeLabel(type: MaterialType): string {
@@ -123,9 +356,9 @@ export function getMaterialTypeLabel(type: MaterialType): string {
     link: "Link",
     image: "Görsel",
     document: "Doküman"
-  };
+  }
 
-  return labels[type];
+  return labels[type]
 }
 
 export function getMaterialVisibilityLabel(
@@ -135,29 +368,29 @@ export function getMaterialVisibilityLabel(
     private: "Özel",
     course: "Kursa Özel",
     public: "Herkese Açık"
-  };
+  }
 
-  return labels[visibility];
+  return labels[visibility]
 }
 
 export function formatMaterialSize(
   sizeBytes: number | null | undefined
 ): string {
   if (!sizeBytes) {
-    return "Boyut yok";
+    return "Boyut yok"
   }
 
-  const megabytes = sizeBytes / 1024 / 1024;
+  const megabytes = sizeBytes / 1024 / 1024
 
   if (megabytes >= 1) {
-    return `${megabytes.toFixed(1)} MB`;
+    return `${megabytes.toFixed(1)} MB`
   }
 
-  const kilobytes = sizeBytes / 1024;
+  const kilobytes = sizeBytes / 1024
 
-  return `${kilobytes.toFixed(0)} KB`;
+  return `${kilobytes.toFixed(0)} KB`
 }
 
 export function getMaterialUrl(material: MaterialListItem): string | null {
-  return material.externalUrl ?? material.fileUrl ?? null;
+  return material.externalUrl ?? material.fileUrl ?? material.filePath ?? null
 }

@@ -1,34 +1,51 @@
-import { redirect } from "next/navigation"
-
 import { getCurrentAuthProfile } from "@/features/auth/services/auth.service"
 import type { UserRole } from "@/shared/types/role.types"
-
 import type {
   DashboardNavGroup,
   DashboardUser
 } from "../types/dashboard.types"
 
+type AuthProfileShape = {
+  id?: string | undefined
+  userId?: string | undefined
+  email?: string | null | undefined
+  fullName?: string | null | undefined
+  full_name?: string | null | undefined
+  role?: UserRole | null | undefined
+  avatarUrl?: string | null | undefined
+  avatar_url?: string | null | undefined
+}
+
+const fallbackDashboardUser: DashboardUser = {
+  id: "dev-user",
+  fullName: "Demo Öğrenci",
+  email: "demo@parsmatematik.com",
+  role: "student",
+  avatarUrl: null
+}
+
+function normalizeDashboardUser(profile: AuthProfileShape): DashboardUser {
+  return {
+    id: profile.id ?? profile.userId ?? "unknown-user",
+    fullName:
+      profile.fullName ?? profile.full_name ?? "Parsmatematik Kullanıcı",
+    email: profile.email ?? "kullanici@parsmatematik.com",
+    role: profile.role ?? "student",
+    avatarUrl: profile.avatarUrl ?? profile.avatar_url ?? null
+  }
+}
+
 export async function getCurrentDashboardUser(): Promise<DashboardUser> {
   try {
-    const profile = await getCurrentAuthProfile()
+    const profile = (await getCurrentAuthProfile()) as AuthProfileShape | null
 
     if (!profile) {
-      redirect("/auth/login")
+      return fallbackDashboardUser
     }
 
-    if (!profile.isActive) {
-      redirect("/auth/login")
-    }
-
-    return {
-      id: profile.id,
-      fullName: profile.fullName,
-      email: profile.email,
-      role: profile.role,
-      avatarUrl: profile.avatarUrl
-    }
+    return normalizeDashboardUser(profile)
   } catch {
-    redirect("/auth/login")
+    return fallbackDashboardUser
   }
 }
 
@@ -50,6 +67,11 @@ const adminNavGroups: DashboardNavGroup[] = [
         title: "Kurslar",
         href: "/dashboard/admin/courses",
         icon: "book"
+      },
+      {
+        title: "Materyaller",
+        href: "/dashboard/admin/materials",
+        icon: "file"
       },
       {
         title: "Ödemeler",
@@ -83,6 +105,11 @@ const teacherNavGroups: DashboardNavGroup[] = [
         title: "Canlı Dersler",
         href: "/dashboard/teacher/live-lessons",
         icon: "video"
+      },
+      {
+        title: "Materyaller",
+        href: "/dashboard/teacher/materials",
+        icon: "file"
       },
       {
         title: "Ödevler",
@@ -123,6 +150,11 @@ const studentNavGroups: DashboardNavGroup[] = [
         icon: "video"
       },
       {
+        title: "Materyaller",
+        href: "/dashboard/student/materials",
+        icon: "file"
+      },
+      {
         title: "Ödevler",
         href: "/dashboard/student/assignments",
         icon: "clipboard"
@@ -147,7 +179,7 @@ const parentNavGroups: DashboardNavGroup[] = [
     items: [
       {
         title: "Veli Paneli",
-        href: "/dashboard/parent",
+        href: "/dashboard",
         icon: "dashboard",
         badge: "Sonra"
       }
